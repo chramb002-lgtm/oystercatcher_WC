@@ -1,0 +1,141 @@
+---
+title: "African Oystercatcher Distribution, Western Cape"
+author: Amber Charman
+output: html_document
+date: "2026-03-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Download iNaturalist data into R
+```{r download inat data}
+
+# install rinat enables downloading iNaturalsit data into R
+
+library(rinat)
+
+## Download African oystercatcher observations
+oyster<-get_inat_obs(taxon_name="Haematopus moquini", bounds= c(-35, 17, -31, 25), 
+                     maxresults = 2000)
+```
+## Filter to the Western Cape region
+```{r}
+
+library(tidyverse)
+
+# keep only good quality observations in the Western Cape
+oyster <- oyster %>% 
+  filter(latitude >= -34.83 & latitude <= -32.11,  # Western Cape bounds
+         longitude >= 18.02 & longitude <= 23.11) %>%
+  filter(quality_grade == "research",               # Only research grade
+         !is.na(latitude),                           # Must have location
+         !is.na(longitude))
+
+```
+
+## Turning data into spatial object
+
+```{r}
+
+library(sf)
+oyster_sf <- st_as_sf(oyster, 
+                    coords = c("longitude", "latitude"), 
+                    crs = 4326)
+
+oyster_sf <- st_transform(oyster_sf, crs = 32734)
+
+print(paste("Created spatial object with", nrow(oyster_sf), "points"))
+```
+
+## Make a simple map
+```{r}
+
+library(ggplot2)
+library(ggspatial)
+
+#create the map
+ggplot() + 
+  annotation_map_tile(type = "osm", progress = "none") +
+  geom_sf(data = oyster_sf, color = "darkred", size = 2)
+```
+## Make an interactive map
+```{r}
+
+library(mapview)
+library(leafpop)
+oyster_wgs84 <- st_transform(oyster_sf, crs = 4326)
+
+oyster_popup <- oyster %>%
+  mutate(click_url = paste0("<b><a href='", url, "' target='_blank'>Link to iNat observation</a></b>"))
+
+mapview(oyster_wgs84,
+        popup = popupTable(oyster_popup,
+                          zcol = c("user_login", "captive_cultivated", "click_url")))
+```
+
+
+
+
+```{r}
+library(leaflet)
+leaflet(oyster_wgs84) %>%
+  addTiles(group = "OSM") %>%
+  addProviderTiles("CartoDB.Positron", group = "Positron") %>%
+  addCircleMarkers(
+    radius = 5,
+    color = "darkred",
+    popup = ~paste(
+      "<b>Observer:</b>", user_login, "<br>",
+      "<b>Date:</b>", observed_on, "<br>",
+      "<b><a href='", url, "' target='_blank'>View on iNaturalist</a></b>"
+    )
+  ) %>%
+  addLayersControl(baseGroups = c("OSM", "Positron"))
+
+```
+
+```{r}
+# Check filtering
+cat("Quality grade values:", unique(oyster$quality_grade), "\n")
+cat("Captive cultivated values:", unique(oyster$captive_cultivated), "\n")
+
+# Count what im keeping
+oyster_filtered <- oyster %>% 
+  filter(quality_grade == "research",
+         captive_cultivated == "false")
+
+cat("Observations after filtering:", nrow(oyster_filtered), "\n")
+```
+```{r}
+# Make sure oyster_sf has the year column
+oyster_sf <- oyster_sf %>%
+  mutate(year = year(observed_on))
+
+# Static map with color by year
+ggplot() + 
+  annotation_map_tile(type = "osm", progress = "none") +
+  geom_sf(data = oyster_sf, 
+          aes(color = year),  # Color by year!
+          size = 2.5, 
+          alpha = 0.7) +
+  scale_color_gradient(name = "Year",
+                       low = "yellow", 
+                       high = "darkred") +
+  labs(title = "African Oystercatcher Distribution Over Time",
+       subtitle = "Western Cape, South Africa",
+       x = "Longitude",
+       y = "Latitude") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 14))
+```
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Set CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+```
+
+
