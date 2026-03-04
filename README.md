@@ -1,6 +1,6 @@
 # oystercatcher_WC
 GIS Honours assignment
-[https://rawcdn.githack.com/chramb002-lgtm/oystercatcher_WC/b9e7c03181e87194eba87529b8e4333844ac5844/WC_oystercatcher.html]
+[https://rawcdn.githack.com/chramb002-lgtm/oystercatcher_WC/cb70cda76cd357fc8d25c55c5b54a900f5db4844/WC_oystercatcher.html]
 
 This project looks at the distibution of African Oystercatchers (Haematopus moquini) across the Western Cape Province of South Africa. Observation data has been colour coded by the year in which the observations were made. Data was downloaded into R from iNaturalist, an open source citizen science platform.
 
