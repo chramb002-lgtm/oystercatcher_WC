@@ -20,7 +20,7 @@ library(rinat)
 oyster<-get_inat_obs(taxon_name="Haematopus moquini", bounds= c(-35, 17, -31, 25), 
                      maxresults = 2000)
 ```
-## Filter to the Western Cape region
+## Filter to the Western Cape region, and ensure only research grade observations
 ```{r}
 
 library(tidyverse)
@@ -58,7 +58,7 @@ library(ggspatial)
 #create the map
 ggplot() + 
   annotation_map_tile(type = "osm", progress = "none") +
-  geom_sf(data = oyster_sf, color = "darkred", size = 2)
+  geom_sf(data = oyster_sf, color = "pink", size = 2)
 ```
 ## Make an interactive map
 ```{r}
@@ -74,8 +74,6 @@ mapview(oyster_wgs84,
         popup = popupTable(oyster_popup,
                           zcol = c("user_login", "captive_cultivated", "click_url")))
 ```
-
-
 
 
 ```{r}
@@ -96,6 +94,8 @@ leaflet(oyster_wgs84) %>%
 
 ```
 
+## Double checking that it is research grade only
+```{r}
 ```{r}
 # Check filtering
 cat("Quality grade values:", unique(oyster$quality_grade), "\n")
@@ -108,21 +108,25 @@ oyster_filtered <- oyster %>%
 
 cat("Observations after filtering:", nrow(oyster_filtered), "\n")
 ```
+
+
+## Make a map that bins observations into the year in which they occured
+
 ```{r}
 # Make sure oyster_sf has the year column
 oyster_sf <- oyster_sf %>%
   mutate(year = year(observed_on))
 
-# Static map with color by year
+# Static map with colour by year
 ggplot() + 
   annotation_map_tile(type = "osm", progress = "none") +
   geom_sf(data = oyster_sf, 
-          aes(color = year),  # Color by year!
+          aes(color = year),  # Colour by year
           size = 2.5, 
           alpha = 0.7) +
   scale_color_gradient(name = "Year",
                        low = "yellow", 
-                       high = "darkred") +
+                       high = "brown") +
   labs(title = "African Oystercatcher Distribution Over Time",
        subtitle = "Western Cape, South Africa",
        x = "Longitude",
