@@ -28,9 +28,10 @@ library(tidyverse)
 # keep only good quality observations in the Western Cape
 oyster <- oyster %>% 
   filter(latitude >= -34.83 & latitude <= -32.11,  # Western Cape bounds
-         longitude >= 18.02 & longitude <= 23.11) %>%
-  filter(quality_grade == "research",               # Only research grade
-         !is.na(latitude),                           # Must have location
+         longitude >= 18.02 & longitude <= 23.11,
+         quality_grade == "research",              # Only research grade
+         captive_cultivated == "false",            # Not captive
+         !is.na(latitude),                         # Must have location
          !is.na(longitude))
 
 ```
@@ -44,8 +45,6 @@ oyster_sf <- st_as_sf(oyster,
                     coords = c("longitude", "latitude"), 
                     crs = 4326)
 
-oyster_sf <- st_transform(oyster_sf, crs = 32734)
-
 print(paste("Created spatial object with", nrow(oyster_sf), "points"))
 ```
 
@@ -58,27 +57,29 @@ library(ggspatial)
 #create the map
 ggplot() + 
   annotation_map_tile(type = "osm", progress = "none") +
-  geom_sf(data = oyster_sf, color = "pink", size = 2)
+  geom_sf(data = oyster_sf, color = "purple", size = 2) + labs(title = "African Oystercatcher Observations",
+       subtitle = "Western Cape, South Africa") +
+  theme_minimal()
 ```
 ## Make an interactive map
 ```{r}
 
 library(mapview)
 library(leafpop)
-oyster_wgs84 <- st_transform(oyster_sf, crs = 4326)
 
+# create popup with observation details
 oyster_popup <- oyster %>%
   mutate(click_url = paste0("<b><a href='", url, "' target='_blank'>Link to iNat observation</a></b>"))
 
-mapview(oyster_wgs84,
+mapview(oyster_sf,
         popup = popupTable(oyster_popup,
-                          zcol = c("user_login", "captive_cultivated", "click_url")))
+                          zcol = c("user_login", "observed_on" , "click_url")))
 ```
 
-
+## Advanced interactive map with layers
 ```{r}
 library(leaflet)
-leaflet(oyster_wgs84) %>%
+leaflet(oyster_sf) %>%
   addTiles(group = "OSM") %>%
   addProviderTiles("CartoDB.Positron", group = "Positron") %>%
   addCircleMarkers(
@@ -93,22 +94,6 @@ leaflet(oyster_wgs84) %>%
   addLayersControl(baseGroups = c("OSM", "Positron"))
 
 ```
-
-## Double checking that it is research grade only
-```{r}
-```{r}
-# Check filtering
-cat("Quality grade values:", unique(oyster$quality_grade), "\n")
-cat("Captive cultivated values:", unique(oyster$captive_cultivated), "\n")
-
-# Count what im keeping
-oyster_filtered <- oyster %>% 
-  filter(quality_grade == "research",
-         captive_cultivated == "false")
-
-cat("Observations after filtering:", nrow(oyster_filtered), "\n")
-```
-
 
 ## Make a map that bins observations into the year in which they occured
 
@@ -135,11 +120,6 @@ ggplot() +
   theme(plot.title = element_text(face = "bold", size = 14))
 ```
 
-```{r}
-knitr::opts_chunk$set(echo = TRUE)
 
-# Set CRAN mirror
-options(repos = c(CRAN = "https://cran.rstudio.com/"))
-```
 
 
